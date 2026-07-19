@@ -5,7 +5,7 @@ const fs   = require("fs");
 
 const BOT_TOKEN  = process.env.BOT_TOKEN;
 const ADMIN_ID   = Number(process.env.ADMIN_ID);
-const PUBLIC_URL = process.env.PUBLIC_URL || "https://botnexpro-production.up.railway.app";
+const PUBLIC_URL = process.env.PUBLIC_URL || "https://umar-muq.github.io/nexcode-miniapp";
 
 if (!BOT_TOKEN) throw new Error("BOT_TOKEN .env faylida yo'q!");
 if (!ADMIN_ID)  throw new Error("ADMIN_ID .env faylida yo'q!");
