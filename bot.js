@@ -41,6 +41,11 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "webapp")));
 
+// Root — index.html qaytarish
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "webapp", "index.html"));
+});
+
 // About ma'lumotlarini berish
 app.get("/about-info", (req, res) => {
   res.json(loadAboutData());
