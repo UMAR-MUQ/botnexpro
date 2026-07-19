@@ -39,8 +39,9 @@ app.use(express.json());
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type,X-Admin-Id");
-  if (req.method === "OPTIONS") return res.sendStatus(200);
+  res.header("Access-Control-Allow-Headers", "Content-Type,X-Admin-Id,Origin,Accept");
+  res.header("Access-Control-Max-Age", "86400");
+  if (req.method === "OPTIONS") return res.status(200).end();
   next();
 });
 app.use(express.static(path.join(__dirname, "webapp")));
