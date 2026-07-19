@@ -20,7 +20,7 @@ bot.start(async (ctx) => {
   ctx.session.step = "ism";
   ctx.session.data = {};
   await ctx.reply(
-    "👋 Salom! Xush kelibsiz!\n\n📝 Ariza to'ldirish uchun bir necha savol beraman.\n\nIsmingizni kiriting:",
+    "👋 Salom! Xush kelibsiz!\n\n📝 NexCode.uz ga ariza to'ldirish uchun bir necha savol beraman.\n\nIsmingizni kiriting:",
     Markup.removeKeyboard()
   );
 });
@@ -31,7 +31,7 @@ bot.command("admin", async (ctx) => {
   ctx.session.step = null;
 
   await ctx.reply(
-    "🛠 *Admin Panel*\n\n"
+    "🛠 *NexCode.uz — Admin Panel*\n\n"
     + "Quyidagi komandalardan foydalaning:\n\n"
     + "✏️ /setname — Bot nomini o'zgartirish\n"
     + "🖼 /setphoto — Bot rasmini o'zgartirish\n"
@@ -160,7 +160,7 @@ bot.on("text", async (ctx) => {
     ctx.session.data.bot_tavsif = text;
     ctx.session.step = null;
 
-    await ctx.reply("✅ *Arizangiz qabul qilindi!*\n\nTez orada siz bilan bog'lanamiz. 🙏", {
+    await ctx.reply("✅ *Arizangiz qabul qilindi!*\n\n*NexCode.uz* jamoasi tez orada siz bilan bog'lanadi. 🙏", {
       parse_mode: "Markdown"
     });
 
@@ -169,7 +169,7 @@ bot.on("text", async (ctx) => {
     const username = user.username ? `@${user.username}` : "username yo'q";
 
     const adminText =
-      `🔔 *Yangi ariza!*\n` +
+      `🔔 *Yangi ariza! — NexCode.uz*\n` +
       `━━━━━━━━━━━━━━━━━━\n` +
       `👤 *Ism:* ${d.ism}\n` +
       `👤 *Familiya:* ${d.familiya}\n` +
@@ -181,7 +181,7 @@ bot.on("text", async (ctx) => {
 
     try {
       await bot.telegram.sendMessage(ADMIN_ID, adminText, { parse_mode: "Markdown" });
-      console.log(`✅ Ariza yuborildi: ${d.ism} ${d.familiya}`);
+      console.log(`✅ NexCode.uz — Ariza yuborildi: ${d.ism} ${d.familiya}`);
     } catch (e) {
       console.error("❌ Adminga yuborishda xato:", e.message);
     }

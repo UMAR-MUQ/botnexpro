@@ -1,7 +1,7 @@
 {
-  "name": "botnexpro",
+  "name": "nexcode-uz",
   "version": "1.0.0",
-  "description": "BotNexPro.uz Telegram Bot",
+  "description": "NexCode.uz Telegram Bot",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
