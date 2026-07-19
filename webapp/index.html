@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexCode.uz</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+  <!-- ═══════════════ BOSH SAHIFA ═══════════════ -->
+  <div id="page-home" class="page active">
+
+    <!-- Banner / Reklama -->
+    <div class="banner">
+      <div class="banner-slider" id="bannerSlider">
+        <div class="banner-slide">
+          <div class="banner-icon">🤖</div>
+          <h2>Telegram Bot yaratish</h2>
+          <p>Biznes uchun professional botlar</p>
+        </div>
+        <div class="banner-slide">
+          <div class="banner-icon">🌐</div>
+          <h2>Web Sayt yaratish</h2>
+          <p>Zamonaviy va tez veb-saytlar</p>
+        </div>
+        <div class="banner-slide">
+          <div class="banner-icon">⚡</div>
+          <h2>Avtomatlashtirish</h2>
+          <p>Biznesingizni avtomatlashtiring</p>
+        </div>
+      </div>
+      <div class="banner-dots" id="bannerDots">
+        <span class="dot active" onclick="goSlide(0)"></span>
+        <span class="dot" onclick="goSlide(1)"></span>
+        <span class="dot" onclick="goSlide(2)"></span>
+      </div>
+    </div>
+
+    <!-- Xizmatlar -->
+    <div class="section-title">Xizmatlarimiz</div>
+    <div class="services">
+      <div class="service-card" onclick="openPage('order')">
+        <span class="service-icon">🤖</span>
+        <span>Telegram Bot</span>
+      </div>
+      <div class="service-card" onclick="openPage('order')">
+        <span class="service-icon">🌐</span>
+        <span>Web Sayt</span>
+      </div>
+      <div class="service-card" onclick="openPage('order')">
+        <span class="service-icon">📱</span>
+        <span>Mini App</span>
+      </div>
+      <div class="service-card" onclick="openPage('order')">
+        <span class="service-icon">⚙️</span>
+        <span>CRM / API</span>
+      </div>
+    </div>
+
+    <!-- Aloqa -->
+    <div class="section-title">Aloqa</div>
+    <div class="contact-cards">
+      <a href="tel:+998900000000" class="contact-card">
+        <span class="contact-icon">📞</span>
+        <div>
+          <div class="contact-label">Telefon</div>
+          <div class="contact-value" id="contact-phone">+998 90 000 00 00</div>
+        </div>
+      </a>
+      <a href="https://t.me/botnexpro_admin" target="_blank" class="contact-card">
+        <span class="contact-icon">💬</span>
+        <div>
+          <div class="contact-label">Telegram</div>
+          <div class="contact-value" id="contact-telegram">@nexcodeuz</div>
+        </div>
+      </a>
+      <a href="https://instagram.com/nexcodeuz" target="_blank" class="contact-card">
+        <span class="contact-icon">📸</span>
+        <div>
+          <div class="contact-label">Instagram</div>
+          <div class="contact-value" id="contact-instagram">@nexcodeuz</div>
+        </div>
+      </a>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ ZAKAZ SAHIFASI ═══════════════ -->
+  <div id="page-order" class="page">
+
+    <div class="page-header">
+      <h2>📋 Zakaz berish</h2>
+      <p>Qanday xizmat kerakligini tanlang</p>
+    </div>
+
+    <!-- Xizmat tanlash -->
+    <div id="order-step-1">
+      <div class="section-title">Xizmat turini tanlang</div>
+      <div class="order-types">
+        <div class="order-type-card" onclick="selectOrderType('bot')">
+          <div class="order-type-icon">🤖</div>
+          <div class="order-type-name">Telegram Bot</div>
+          <div class="order-type-desc">Biznes, do'kon, ariza botlari</div>
+        </div>
+        <div class="order-type-card" onclick="selectOrderType('website')">
+          <div class="order-type-icon">🌐</div>
+          <div class="order-type-name">Web Sayt</div>
+          <div class="order-type-desc">Landing, korporativ, do'kon</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bot uchun forma -->
+    <div id="order-step-bot" class="order-form hidden">
+      <div class="form-back" onclick="backToStep1()">← Orqaga</div>
+      <div class="section-title">🤖 Telegram Bot</div>
+      <div class="form-group">
+        <label>Bot nomi</label>
+        <input type="text" id="bot-name" placeholder="Masalan: Do'kon boti" />
+      </div>
+      <div class="form-group">
+        <label>Bot qanday ishlashi kerak?</label>
+        <textarea id="bot-desc" placeholder="Batafsil izohlang: buyurtma qabul qilsin, ma'lumot bersin..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Telefon raqam</label>
+        <input type="tel" id="bot-phone" placeholder="+998 90 000 00 00" />
+      </div>
+      <button class="submit-btn" onclick="submitOrder('bot')">📨 Zakaz yuborish</button>
+    </div>
+
+    <!-- Website uchun forma -->
+    <div id="order-step-website" class="order-form hidden">
+      <div class="form-back" onclick="backToStep1()">← Orqaga</div>
+      <div class="section-title">🌐 Web Sayt</div>
+      <div class="form-group">
+        <label>Sayt nomi / brend</label>
+        <input type="text" id="web-name" placeholder="Masalan: NexCode.uz" />
+      </div>
+      <div class="form-group">
+        <label>Sayt qanday bo'lishi kerak?</label>
+        <textarea id="web-desc" placeholder="Landing page, korporativ sayt, onlayn do'kon..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Telefon raqam</label>
+        <input type="tel" id="web-phone" placeholder="+998 90 000 00 00" />
+      </div>
+      <button class="submit-btn" onclick="submitOrder('website')">📨 Zakaz yuborish</button>
+    </div>
+
+    <!-- Muvaffaqiyat xabari -->
+    <div id="order-success" class="hidden">
+      <div class="success-box">
+        <div class="success-icon">✅</div>
+        <h3>Zakaz qabul qilindi!</h3>
+        <p>NexCode.uz jamoasi tez orada siz bilan bog'lanadi.</p>
+        <button class="submit-btn" onclick="resetOrder()">🏠 Bosh sahifaga</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ BIZ HAQIMIZDA ═══════════════ -->
+  <div id="page-about" class="page">
+    <div class="page-header">
+      <h2>ℹ️ Biz haqimizda</h2>
+    </div>
+    <div class="about-content" id="about-content">
+      <div class="about-logo">
+        <div class="about-logo-text">NexCode.uz</div>
+      </div>
+      <div class="about-text" id="about-text">
+        NexCode.uz — professional Telegram botlar, web saytlar va raqamli yechimlar yaratish bo'yicha xizmat ko'rsatuvchi kompaniya.
+      </div>
+      <div class="about-stats">
+        <div class="stat">
+          <div class="stat-num" id="stat-projects">50+</div>
+          <div class="stat-label">Loyiha</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="stat-clients">30+</div>
+          <div class="stat-label">Mijoz</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="stat-years">2+</div>
+          <div class="stat-label">Yil tajriba</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ BOTTOM NAVIGATION ═══════════════ -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="openPage('home')" id="nav-home">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Bosh sahifa</span>
+    </div>
+    <div class="nav-item" onclick="openPage('order')" id="nav-order">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">Zakaz</span>
+    </div>
+    <div class="nav-item" onclick="openPage('about')" id="nav-about">
+      <span class="nav-icon">ℹ️</span>
+      <span class="nav-label">Biz haqimizda</span>
+    </div>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>

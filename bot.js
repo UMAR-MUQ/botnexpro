@@ -1,21 +1,75 @@
 require("dotenv").config();
 const { Telegraf, Markup, session } = require("telegraf");
+const express = require("express");
+const path    = require("path");
+const fs      = require("fs");
 
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const ADMIN_ID  = Number(process.env.ADMIN_ID);
+const BOT_TOKEN  = process.env.BOT_TOKEN;
+const ADMIN_ID   = Number(process.env.ADMIN_ID);
+const PORT       = process.env.PORT || 3000;
+const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
 
 if (!BOT_TOKEN) throw new Error("BOT_TOKEN .env faylida yo'q!");
 if (!ADMIN_ID)  throw new Error("ADMIN_ID .env faylida yo'q!");
 
-const bot = new Telegraf(BOT_TOKEN);
+// ── About ma'lumotlari fayli ──────────────────────────────
+const ABOUT_FILE = path.join(__dirname, "about.json");
 
-// ── Session ───────────────────────────────────────────────────────────────────
+function loadAboutData() {
+  try {
+    if (fs.existsSync(ABOUT_FILE)) {
+      return JSON.parse(fs.readFileSync(ABOUT_FILE, "utf8"));
+    }
+  } catch (e) {}
+  return {
+    text:      "NexCode.uz — professional Telegram botlar, web saytlar va raqamli yechimlar yaratish bo'yicha xizmat ko'rsatuvchi kompaniya.",
+    phone:     "+998 90 000 00 00",
+    telegram:  "@nexcodeuz",
+    instagram: "@nexcodeuz",
+    projects:  "50+",
+    clients:   "30+",
+    years:     "2+",
+  };
+}
+
+function saveAboutData(data) {
+  fs.writeFileSync(ABOUT_FILE, JSON.stringify(data, null, 2), "utf8");
+}
+
+// ── Express server (Mini App uchun) ──────────────────────
+const app = express();
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "webapp")));
+
+// About ma'lumotlarini berish
+app.get("/about-info", (req, res) => {
+  res.json(loadAboutData());
+});
+
+// Zakaz qabul qilish
+app.post("/send-order", async (req, res) => {
+  const { text } = req.body;
+  if (!text) return res.status(400).json({ ok: false });
+  try {
+    await bot.telegram.sendMessage(ADMIN_ID, text, { parse_mode: "Markdown" });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("Zakaz yuborishda xato:", e.message);
+    res.status(500).json({ ok: false });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🌐 Web server: ${PUBLIC_URL}`);
+});
+
+// ── Bot ───────────────────────────────────────────────────
+const bot = new Telegraf(BOT_TOKEN);
 bot.use(session({ defaultSession: () => ({ step: null, data: {} }) }));
 
-// ── Admin tekshirish ──────────────────────────────────────────────────────────
 const isAdmin = (ctx) => ctx.from.id === ADMIN_ID;
 
-// ── /start ────────────────────────────────────────────────────────────────────
+// ── /start ────────────────────────────────────────────────
 bot.start(async (ctx) => {
   ctx.session.step = "ism";
   ctx.session.data = {};
@@ -25,138 +79,203 @@ bot.start(async (ctx) => {
   );
 });
 
-// ── /admin — Admin panel (faqat admin uchun) ──────────────────────────────────
+// ── /webapp — Mini App ochish ─────────────────────────────
+bot.command("webapp", async (ctx) => {
+  await ctx.reply(
+    "🚀 *NexCode.uz Mini App*\n\nQuyidagi tugmani bosing:",
+    {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[
+          {
+            text: "🌐 NexCode.uz ni ochish",
+            web_app: { url: PUBLIC_URL }
+          }
+        ]]
+      }
+    }
+  );
+});
+
+// ── /admin ────────────────────────────────────────────────
 bot.command("admin", async (ctx) => {
   if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
   ctx.session.step = null;
-
   await ctx.reply(
     "🛠 *NexCode.uz — Admin Panel*\n\n"
-    + "Quyidagi komandalardan foydalaning:\n\n"
     + "✏️ /setname — Bot nomini o'zgartirish\n"
     + "🖼 /setphoto — Bot rasmini o'zgartirish\n"
     + "📝 /setdesc — Bot tavsifini o'zgartirish\n"
+    + "ℹ️ /setabout — Biz haqimizda matnini o'zgartirish\n"
+    + "📞 /setphone — Telefon raqamni o'zgartirish\n"
+    + "💬 /settelegram — Telegram username o'zgartirish\n"
+    + "📸 /setinstagram — Instagram username o'zgartirish\n"
+    + "🌐 /webapp — Mini App ni ko'rish\n"
     + "❌ /cancel — Bekor qilish",
     { parse_mode: "Markdown" }
   );
 });
 
-// ── /setname — Bot nomini o'zgartirish ───────────────────────────────────────
+// ── Admin komandalar ──────────────────────────────────────
 bot.command("setname", async (ctx) => {
   if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
   ctx.session.step = "admin_setname";
-  await ctx.reply("✏️ Yangi bot nomini yozing:\n\n(Bekor qilish: /cancel)");
+  await ctx.reply("✏️ Yangi bot nomini yozing:\n(Bekor qilish: /cancel)");
 });
 
-// ── /setphoto — Bot rasmini o'zgartirish ─────────────────────────────────────
 bot.command("setphoto", async (ctx) => {
   if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
   ctx.session.step = "admin_setphoto";
-  await ctx.reply("🖼 Yangi bot rasmini yuboring:\n\n(Bekor qilish: /cancel)");
+  await ctx.reply("🖼 Yangi bot rasmini yuboring:\n(Bekor qilish: /cancel)");
 });
 
-// ── /setdesc — Bot tavsifini o'zgartirish ────────────────────────────────────
 bot.command("setdesc", async (ctx) => {
   if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
   ctx.session.step = "admin_setdesc";
-  await ctx.reply("📝 Yangi bot tavsifini yozing:\n\n(Bekor qilish: /cancel)");
+  await ctx.reply("📝 Yangi bot tavsifini yozing:\n(Bekor qilish: /cancel)");
 });
 
-// ── /cancel ───────────────────────────────────────────────────────────────────
+bot.command("setabout", async (ctx) => {
+  if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
+  ctx.session.step = "admin_setabout";
+  const d = loadAboutData();
+  await ctx.reply(
+    `ℹ️ Hozirgi matn:\n\n${d.text}\n\nYangi matnni yozing:\n(Bekor qilish: /cancel)`
+  );
+});
+
+bot.command("setphone", async (ctx) => {
+  if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
+  ctx.session.step = "admin_setphone";
+  const d = loadAboutData();
+  await ctx.reply(`📞 Hozirgi raqam: ${d.phone}\n\nYangi raqamni yozing:`);
+});
+
+bot.command("settelegram", async (ctx) => {
+  if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
+  ctx.session.step = "admin_settelegram";
+  const d = loadAboutData();
+  await ctx.reply(`💬 Hozirgi: ${d.telegram}\n\nYangi Telegram username yozing (@bilan):`);
+});
+
+bot.command("setinstagram", async (ctx) => {
+  if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
+  ctx.session.step = "admin_setinstagram";
+  const d = loadAboutData();
+  await ctx.reply(`📸 Hozirgi: ${d.instagram}\n\nYangi Instagram username yozing (@bilan):`);
+});
+
 bot.command("cancel", async (ctx) => {
   ctx.session.step = null;
   ctx.session.data = {};
   await ctx.reply("❌ Bekor qilindi.", Markup.removeKeyboard());
 });
 
-// ── Rasmni qayta ishlash ──────────────────────────────────────────────────────
+// ── Rasm handler ──────────────────────────────────────────
 bot.on("photo", async (ctx) => {
-  if (!isAdmin(ctx)) return;
-  if (ctx.session.step !== "admin_setphoto") return;
-
+  if (!isAdmin(ctx) || ctx.session.step !== "admin_setphoto") return;
   try {
-    // Eng katta o'lchamdagi rasmni olish
-    const photos = ctx.message.photo;
-    const fileId = photos[photos.length - 1].file_id;
-
-    // Faylni yuklab olish
+    const photos  = ctx.message.photo;
+    const fileId  = photos[photos.length - 1].file_id;
     const fileLink = await ctx.telegram.getFileLink(fileId);
     const response = await fetch(fileLink.href);
-    const buffer = Buffer.from(await response.arrayBuffer());
-
-    // Bot rasmini o'rnatish
+    const buffer   = Buffer.from(await response.arrayBuffer());
     await ctx.telegram.setMyProfilePhoto({ source: buffer });
-
     ctx.session.step = null;
     await ctx.reply("✅ Bot rasmi muvaffaqiyatli o'zgartirildi!");
   } catch (e) {
-    console.error("Rasm o'zgartirishda xato:", e.message);
-    await ctx.reply(
-      "❌ Xato yuz berdi.\n\nEslatma: Bot rasmini faqat @BotFather orqali o'zgartirish mumkin.\n👉 @BotFather → /mybots → botingiz → Edit Bot → Edit Botpic"
-    );
+    await ctx.reply("❌ Xato. @BotFather → /mybots → Edit Bot → Edit Botpic orqali o'zgartiring.");
     ctx.session.step = null;
   }
 });
 
-// ── Matn xabarlarni qayta ishlash ─────────────────────────────────────────────
+// ── Matn handler ──────────────────────────────────────────
 bot.on("text", async (ctx) => {
   const step = ctx.session.step;
   const text = ctx.message.text;
 
-  // ── Admin: Bot nomini o'zgartirish ─────────────────────────────────────────
-  if (step === "admin_setname") {
-    if (!isAdmin(ctx)) return;
+  // ── Admin amallar ────────────────────────────────────────
+  if (step === "admin_setname" && isAdmin(ctx)) {
     try {
       await ctx.telegram.setMyName(text);
       ctx.session.step = null;
-      await ctx.reply(`✅ Bot nomi *"${text}"* ga o'zgartirildi!`, { parse_mode: "Markdown" });
+      return ctx.reply(`✅ Bot nomi *"${text}"* ga o'zgartirildi!`, { parse_mode: "Markdown" });
     } catch (e) {
-      await ctx.reply("❌ Xato: " + e.message);
       ctx.session.step = null;
+      return ctx.reply("❌ Xato: " + e.message);
     }
-    return;
   }
 
-  // ── Admin: Bot tavsifini o'zgartirish ──────────────────────────────────────
-  if (step === "admin_setdesc") {
-    if (!isAdmin(ctx)) return;
+  if (step === "admin_setdesc" && isAdmin(ctx)) {
     try {
       await ctx.telegram.setMyDescription(text);
       await ctx.telegram.setMyShortDescription(text.slice(0, 120));
       ctx.session.step = null;
-      await ctx.reply("✅ Bot tavsifi muvaffaqiyatli o'zgartirildi!");
+      return ctx.reply("✅ Bot tavsifi o'zgartirildi!");
     } catch (e) {
-      await ctx.reply("❌ Xato: " + e.message);
       ctx.session.step = null;
+      return ctx.reply("❌ Xato: " + e.message);
     }
-    return;
   }
 
-  // ── Oddiy foydalanuvchi ────────────────────────────────────────────────────
+  if (step === "admin_setabout" && isAdmin(ctx)) {
+    const d = loadAboutData();
+    d.text = text;
+    saveAboutData(d);
+    ctx.session.step = null;
+    return ctx.reply("✅ \"Biz haqimizda\" matni yangilandi!");
+  }
+
+  if (step === "admin_setphone" && isAdmin(ctx)) {
+    const d = loadAboutData();
+    d.phone = text;
+    saveAboutData(d);
+    ctx.session.step = null;
+    return ctx.reply(`✅ Telefon raqam *${text}* ga o'zgartirildi!`, { parse_mode: "Markdown" });
+  }
+
+  if (step === "admin_settelegram" && isAdmin(ctx)) {
+    const d = loadAboutData();
+    d.telegram = text;
+    saveAboutData(d);
+    ctx.session.step = null;
+    return ctx.reply(`✅ Telegram *${text}* ga o'zgartirildi!`, { parse_mode: "Markdown" });
+  }
+
+  if (step === "admin_setinstagram" && isAdmin(ctx)) {
+    const d = loadAboutData();
+    d.instagram = text;
+    saveAboutData(d);
+    ctx.session.step = null;
+    return ctx.reply(`✅ Instagram *${text}* ga o'zgartirildi!`, { parse_mode: "Markdown" });
+  }
+
+  // ── Oddiy foydalanuvchi ───────────────────────────────────
   if (step === "ism") {
     ctx.session.data.ism = text;
     ctx.session.step = "familiya";
-    await ctx.reply("✅ Qabul qilindi!\n\nFamiliyangizni kiriting:");
+    return ctx.reply("✅ Qabul qilindi!\n\nFamiliyangizni kiriting:");
+  }
 
-  } else if (step === "familiya") {
+  if (step === "familiya") {
     ctx.session.data.familiya = text;
     ctx.session.step = "telefon";
-    await ctx.reply(
+    return ctx.reply(
       "✅ Qabul qilindi!\n\nTelefon raqamingizni yuboring:",
-      Markup.keyboard([
-        [Markup.button.contactRequest("📱 Raqamni yuborish")]
-      ]).resize().oneTime()
+      Markup.keyboard([[Markup.button.contactRequest("📱 Raqamni yuborish")]]).resize().oneTime()
     );
+  }
 
-  } else if (step === "telefon") {
+  if (step === "telefon") {
     ctx.session.data.telefon = text;
     ctx.session.step = "bot_tavsif";
-    await ctx.reply(
-      "✅ Qabul qilindi!\n\n💬 Sizga qanday bot kerak?\nIltimos, batafsil izohlang:",
+    return ctx.reply(
+      "✅ Qabul qilindi!\n\n💬 Sizga qanday xizmat kerak?\nIltimos, batafsil izohlang:",
       Markup.removeKeyboard()
     );
+  }
 
-  } else if (step === "bot_tavsif") {
+  if (step === "bot_tavsif") {
     ctx.session.data.bot_tavsif = text;
     ctx.session.step = null;
 
@@ -167,49 +286,44 @@ bot.on("text", async (ctx) => {
     const d = ctx.session.data;
     const user = ctx.from;
     const username = user.username ? `@${user.username}` : "username yo'q";
-
     const adminText =
       `🔔 *Yangi ariza! — NexCode.uz*\n` +
       `━━━━━━━━━━━━━━━━━━\n` +
       `👤 *Ism:* ${d.ism}\n` +
       `👤 *Familiya:* ${d.familiya}\n` +
       `📞 *Telefon:* ${d.telefon}\n` +
-      `💬 *Qanday bot kerak:*\n${d.bot_tavsif}\n` +
+      `💬 *Xizmat:*\n${d.bot_tavsif}\n` +
       `━━━━━━━━━━━━━━━━━━\n` +
-      `🆔 Telegram ID: \`${user.id}\`\n` +
+      `🆔 ID: \`${user.id}\`\n` +
       `🔗 Username: ${username}`;
 
     try {
       await bot.telegram.sendMessage(ADMIN_ID, adminText, { parse_mode: "Markdown" });
-      console.log(`✅ NexCode.uz — Ariza yuborildi: ${d.ism} ${d.familiya}`);
     } catch (e) {
       console.error("❌ Adminga yuborishda xato:", e.message);
     }
-
-  } else {
-    await ctx.reply("Botni boshlash uchun /start bosing.");
+    return;
   }
+
+  await ctx.reply("Botni boshlash uchun /start bosing.");
 });
 
-// ── Kontakt ───────────────────────────────────────────────────────────────────
+// ── Kontakt ───────────────────────────────────────────────
 bot.on("contact", async (ctx) => {
   if (ctx.session.step !== "telefon") return;
-
   let phone = ctx.message.contact.phone_number;
   if (!phone.startsWith("+")) phone = "+" + phone;
-
   ctx.session.data.telefon = phone;
   ctx.session.step = "bot_tavsif";
-
   await ctx.reply(
-    "✅ Qabul qilindi!\n\n💬 Sizga qanday bot kerak?\nIltimos, batafsil izohlang:",
+    "✅ Qabul qilindi!\n\n💬 Sizga qanday xizmat kerak?\nIltimos, batafsil izohlang:",
     Markup.removeKeyboard()
   );
 });
 
-// ── Ishga tushirish ───────────────────────────────────────────────────────────
+// ── Ishga tushirish ───────────────────────────────────────
 bot.launch().then(() => {
-  console.log("✅ Bot ishga tushdi!");
+  console.log("✅ NexCode.uz Bot ishga tushdi!");
 });
 
 process.once("SIGINT",  () => bot.stop("SIGINT"));
