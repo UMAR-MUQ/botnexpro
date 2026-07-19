@@ -46,9 +46,32 @@ app.use((req, res, next) => {
 });
 app.use(express.static(path.join(__dirname, "webapp")));
 
-// Root — index.html qaytarish
+// Root — index.html ga ma'lumotlarni inject qilib qaytarish
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "webapp", "index.html"));
+  try {
+    const d = loadAboutData();
+    let html = fs.readFileSync(path.join(__dirname, "webapp", "index.html"), "utf8");
+
+    // Ma'lumotlarni HTML ga to'g'ridan-to'g'ri yozish
+    html = html.replace(
+      '</head>',
+      `<script>
+        window.NEXCODE_DATA = {
+          text: ${JSON.stringify(d.text)},
+          phone: ${JSON.stringify(d.phone)},
+          telegram: ${JSON.stringify(d.telegram)},
+          instagram: ${JSON.stringify(d.instagram)},
+          projects: ${JSON.stringify(d.projects)},
+          clients: ${JSON.stringify(d.clients)},
+          years: ${JSON.stringify(d.years)}
+        };
+      </script>
+      </head>`
+    );
+    res.send(html);
+  } catch (e) {
+    res.sendFile(path.join(__dirname, "webapp", "index.html"));
+  }
 });
 
 // About ma'lumotlarini berish

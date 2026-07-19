@@ -117,35 +117,30 @@ setInterval(() => {
 }, 3500);
 
 // ── Ma'lumotlarni serverdan olish ─────────────────────────
-async function loadAbout() {
-  try {
-    const base = window.location.origin;
-    const res  = await fetch(`${base}/about-info`);
-    if (!res.ok) return;
-    const data = await res.json();
+function loadAbout() {
+  // Server tomonidan inject qilingan ma'lumotlar
+  const data = window.NEXCODE_DATA;
+  if (!data) return;
 
-    if (data.text)     document.getElementById('about-text').textContent      = data.text;
-    if (data.phone) {
-      document.getElementById('contact-phone').textContent   = data.phone;
-      const phoneLink = document.querySelector('a[href^="tel:"]');
-      if (phoneLink) phoneLink.href = 'tel:' + data.phone.replace(/\s/g,'');
-    }
-    if (data.telegram) {
-      document.getElementById('contact-telegram').textContent = data.telegram;
-      const tgLink = document.querySelector('a[href*="t.me"]');
-      if (tgLink) tgLink.href = 'https://t.me/' + data.telegram.replace('@','');
-    }
-    if (data.instagram) {
-      document.getElementById('contact-instagram').textContent = data.instagram;
-      const igLink = document.querySelector('a[href*="instagram"]');
-      if (igLink) igLink.href = 'https://instagram.com/' + data.instagram.replace('@','');
-    }
-    if (data.projects) document.getElementById('stat-projects').textContent = data.projects;
-    if (data.clients)  document.getElementById('stat-clients').textContent  = data.clients;
-    if (data.years)    document.getElementById('stat-years').textContent    = data.years;
-  } catch (e) {
-    console.log("Ma'lumot yuklanmadi:", e.message);
+  if (data.text)     document.getElementById('about-text').textContent      = data.text;
+  if (data.phone) {
+    document.getElementById('contact-phone').textContent   = data.phone;
+    const phoneLink = document.querySelector('a[href^="tel:"]');
+    if (phoneLink) phoneLink.href = 'tel:' + data.phone.replace(/\s/g,'');
   }
+  if (data.telegram) {
+    document.getElementById('contact-telegram').textContent = data.telegram;
+    const tgLink = document.querySelector('a[href*="t.me"]');
+    if (tgLink) tgLink.href = 'https://t.me/' + data.telegram.replace('@','');
+  }
+  if (data.instagram) {
+    document.getElementById('contact-instagram').textContent = data.instagram;
+    const igLink = document.querySelector('a[href*="instagram"]');
+    if (igLink) igLink.href = 'https://instagram.com/' + data.instagram.replace('@','');
+  }
+  if (data.projects) document.getElementById('stat-projects').textContent = data.projects;
+  if (data.clients)  document.getElementById('stat-clients').textContent  = data.clients;
+  if (data.years)    document.getElementById('stat-years').textContent    = data.years;
 }
 
 loadAbout();
