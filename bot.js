@@ -9,8 +9,11 @@ if (!ADMIN_ID)  throw new Error("ADMIN_ID .env faylida yo'q!");
 
 const bot = new Telegraf(BOT_TOKEN);
 
-// ── Session (har bir foydalanuvchi uchun holat saqlash) ───────────────────────
+// ── Session ───────────────────────────────────────────────────────────────────
 bot.use(session({ defaultSession: () => ({ step: null, data: {} }) }));
+
+// ── Admin tekshirish ──────────────────────────────────────────────────────────
+const isAdmin = (ctx) => ctx.from.id === ADMIN_ID;
 
 // ── /start ────────────────────────────────────────────────────────────────────
 bot.start(async (ctx) => {
@@ -22,11 +25,114 @@ bot.start(async (ctx) => {
   );
 });
 
-// ── Xabarlarni qayta ishlash ──────────────────────────────────────────────────
+// ── /admin — Admin panel (faqat admin uchun) ──────────────────────────────────
+bot.command("admin", async (ctx) => {
+  if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
+  ctx.session.step = null;
+
+  await ctx.reply(
+    "🛠 *Admin Panel*\n\n"
+    + "Quyidagi komandalardan foydalaning:\n\n"
+    + "✏️ /setname — Bot nomini o'zgartirish\n"
+    + "🖼 /setphoto — Bot rasmini o'zgartirish\n"
+    + "📝 /setdesc — Bot tavsifini o'zgartirish\n"
+    + "❌ /cancel — Bekor qilish",
+    { parse_mode: "Markdown" }
+  );
+});
+
+// ── /setname — Bot nomini o'zgartirish ───────────────────────────────────────
+bot.command("setname", async (ctx) => {
+  if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
+  ctx.session.step = "admin_setname";
+  await ctx.reply("✏️ Yangi bot nomini yozing:\n\n(Bekor qilish: /cancel)");
+});
+
+// ── /setphoto — Bot rasmini o'zgartirish ─────────────────────────────────────
+bot.command("setphoto", async (ctx) => {
+  if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
+  ctx.session.step = "admin_setphoto";
+  await ctx.reply("🖼 Yangi bot rasmini yuboring:\n\n(Bekor qilish: /cancel)");
+});
+
+// ── /setdesc — Bot tavsifini o'zgartirish ────────────────────────────────────
+bot.command("setdesc", async (ctx) => {
+  if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
+  ctx.session.step = "admin_setdesc";
+  await ctx.reply("📝 Yangi bot tavsifini yozing:\n\n(Bekor qilish: /cancel)");
+});
+
+// ── /cancel ───────────────────────────────────────────────────────────────────
+bot.command("cancel", async (ctx) => {
+  ctx.session.step = null;
+  ctx.session.data = {};
+  await ctx.reply("❌ Bekor qilindi.", Markup.removeKeyboard());
+});
+
+// ── Rasmni qayta ishlash ──────────────────────────────────────────────────────
+bot.on("photo", async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  if (ctx.session.step !== "admin_setphoto") return;
+
+  try {
+    // Eng katta o'lchamdagi rasmni olish
+    const photos = ctx.message.photo;
+    const fileId = photos[photos.length - 1].file_id;
+
+    // Faylni yuklab olish
+    const fileLink = await ctx.telegram.getFileLink(fileId);
+    const response = await fetch(fileLink.href);
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    // Bot rasmini o'rnatish
+    await ctx.telegram.setMyProfilePhoto({ source: buffer });
+
+    ctx.session.step = null;
+    await ctx.reply("✅ Bot rasmi muvaffaqiyatli o'zgartirildi!");
+  } catch (e) {
+    console.error("Rasm o'zgartirishda xato:", e.message);
+    await ctx.reply(
+      "❌ Xato yuz berdi.\n\nEslatma: Bot rasmini faqat @BotFather orqali o'zgartirish mumkin.\n👉 @BotFather → /mybots → botingiz → Edit Bot → Edit Botpic"
+    );
+    ctx.session.step = null;
+  }
+});
+
+// ── Matn xabarlarni qayta ishlash ─────────────────────────────────────────────
 bot.on("text", async (ctx) => {
   const step = ctx.session.step;
   const text = ctx.message.text;
 
+  // ── Admin: Bot nomini o'zgartirish ─────────────────────────────────────────
+  if (step === "admin_setname") {
+    if (!isAdmin(ctx)) return;
+    try {
+      await ctx.telegram.setMyName(text);
+      ctx.session.step = null;
+      await ctx.reply(`✅ Bot nomi *"${text}"* ga o'zgartirildi!`, { parse_mode: "Markdown" });
+    } catch (e) {
+      await ctx.reply("❌ Xato: " + e.message);
+      ctx.session.step = null;
+    }
+    return;
+  }
+
+  // ── Admin: Bot tavsifini o'zgartirish ──────────────────────────────────────
+  if (step === "admin_setdesc") {
+    if (!isAdmin(ctx)) return;
+    try {
+      await ctx.telegram.setMyDescription(text);
+      await ctx.telegram.setMyShortDescription(text.slice(0, 120));
+      ctx.session.step = null;
+      await ctx.reply("✅ Bot tavsifi muvaffaqiyatli o'zgartirildi!");
+    } catch (e) {
+      await ctx.reply("❌ Xato: " + e.message);
+      ctx.session.step = null;
+    }
+    return;
+  }
+
+  // ── Oddiy foydalanuvchi ────────────────────────────────────────────────────
   if (step === "ism") {
     ctx.session.data.ism = text;
     ctx.session.step = "familiya";
@@ -54,12 +160,10 @@ bot.on("text", async (ctx) => {
     ctx.session.data.bot_tavsif = text;
     ctx.session.step = null;
 
-    // Foydalanuvchiga tasdiqlash
     await ctx.reply("✅ *Arizangiz qabul qilindi!*\n\nTez orada siz bilan bog'lanamiz. 🙏", {
       parse_mode: "Markdown"
     });
 
-    // Adminga xabar yuborish
     const d = ctx.session.data;
     const user = ctx.from;
     const username = user.username ? `@${user.username}` : "username yo'q";
@@ -83,12 +187,11 @@ bot.on("text", async (ctx) => {
     }
 
   } else {
-    // Hech qanday holat yo'q
     await ctx.reply("Botni boshlash uchun /start bosing.");
   }
 });
 
-// ── Kontakt (telefon tugmasi bilan) ───────────────────────────────────────────
+// ── Kontakt ───────────────────────────────────────────────────────────────────
 bot.on("contact", async (ctx) => {
   if (ctx.session.step !== "telefon") return;
 
