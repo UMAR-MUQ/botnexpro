@@ -3,26 +3,34 @@ const express = require("express");
 const path    = require("path");
 const fs      = require("fs");
 
-const PORT = process.env.PORT || 3000;
+const PORT     = process.env.PORT || 3000;
+const ADMIN_ID = process.env.ADMIN_ID;
 
-// ── About ma'lumotlari ────────────────────────────────────
-const ABOUT_FILE = path.join(__dirname, "about.json");
+// ── Config fayl ───────────────────────────────────────────
+const CFG_FILE = path.join(__dirname, "config.json");
 
-function loadAboutData() {
+const DEFAULT_CFG = {
+  phone:     "+998 90 000 00 00",
+  telegram:  "@botnexpro_admin",
+  instagram: "@botnexpro",
+  about:     "BotNexPro — professional Telegram botlar, web saytlar va raqamli yechimlar yaratish bo'yicha xizmat ko'rsatuvchi kompaniya.",
+  projects:  "50+",
+  clients:   "30+",
+  years:     "2+",
+};
+
+function loadCfg() {
   try {
-    if (fs.existsSync(ABOUT_FILE)) {
-      return JSON.parse(fs.readFileSync(ABOUT_FILE, "utf8"));
-    }
+    if (fs.existsSync(CFG_FILE))
+      return { ...DEFAULT_CFG, ...JSON.parse(fs.readFileSync(CFG_FILE, "utf8")) };
   } catch (e) {}
-  return {
-    text:      "NexCode.uz — professional Telegram botlar, web saytlar va raqamli yechimlar yaratish bo'yicha xizmat ko'rsatuvchi kompaniya.",
-    phone:     "+998 90 000 00 00",
-    telegram:  "@nexcodeuz",
-    instagram: "@nexcodeuz",
-    projects:  "50+",
-    clients:   "30+",
-    years:     "2+",
-  };
+  return { ...DEFAULT_CFG };
+}
+
+function saveCfg(data) {
+  const cfg = { ...loadCfg(), ...data };
+  fs.writeFileSync(CFG_FILE, JSON.stringify(cfg, null, 2), "utf8");
+  return cfg;
 }
 
 // ── Express ───────────────────────────────────────────────
@@ -30,57 +38,58 @@ const app = express();
 app.use(express.json());
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Content-Type");
+  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type,X-Admin-Id");
+  if (req.method === "OPTIONS") return res.sendStatus(200);
   next();
 });
+app.use(express.static(path.join(__dirname, "webapp")));
 
-// Root — index.html ga data inject qilib yuborish
+// ── Root ──────────────────────────────────────────────────
 app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "webapp", "index.html"));
+});
+
+// ── Config olish (hammaga) ────────────────────────────────
+app.get("/cfg", (req, res) => {
+  res.json(loadCfg());
+});
+
+// ── Config saqlash (faqat admin) ──────────────────────────
+app.post("/cfg", (req, res) => {
+  const adminHeader = req.headers["x-admin-id"];
+  if (adminHeader !== ADMIN_ID) {
+    return res.status(403).json({ ok: false, error: "Ruxsat yo'q" });
+  }
   try {
-    const d    = loadAboutData();
-    let   html = fs.readFileSync(path.join(__dirname, "webapp", "index.html"), "utf8");
-    html = html.replace("</head>", `<script>window.NEXCODE_DATA=${JSON.stringify(d)};</script></head>`);
-    res.send(html);
+    const cfg = saveCfg(req.body);
+    console.log("✅ Config yangilandi");
+    res.json({ ok: true, cfg });
   } catch (e) {
-    res.status(500).send("Xato: " + e.message);
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-// Static fayllar (style.css, app.js)
-app.use(express.static(path.join(__dirname, "webapp")));
-
-// About API
-app.get("/about-info", (req, res) => {
-  res.json(loadAboutData());
-});
-
-// Zakaz qabul qilish
-app.post("/send-order", async (req, res) => {
+// ── Zakaz qabul qilish ────────────────────────────────────
+app.post("/order", async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ ok: false });
   try {
     const BOT_TOKEN = process.env.BOT_TOKEN;
-    const ADMIN_ID  = process.env.ADMIN_ID;
-    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-    const response = await fetch(url, {
+    const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id:    ADMIN_ID,
-        text:       text,
-        parse_mode: "Markdown",
-      }),
+      body: JSON.stringify({ chat_id: ADMIN_ID, text, parse_mode: "Markdown" }),
     });
-    const result = await response.json();
+    const result = await r.json();
     res.json({ ok: result.ok });
   } catch (e) {
-    console.error("Zakaz yuborishda xato:", e.message);
     res.status(500).json({ ok: false });
   }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🌐 Web server ishga tushdi: http://0.0.0.0:${PORT}`);
+  console.log(`🌐 Server: http://0.0.0.0:${PORT}`);
 });
 
-module.exports = { loadAboutData };
+module.exports = { loadCfg };
