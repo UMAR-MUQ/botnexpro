@@ -3,9 +3,9 @@ const { Telegraf, Markup, session } = require("telegraf");
 const path = require("path");
 const fs   = require("fs");
 
-const BOT_TOKEN  = process.env.BOT_TOKEN;
-const ADMIN_ID   = Number(process.env.ADMIN_ID);
-const PUBLIC_URL = process.env.PUBLIC_URL || "https://umar-muq.github.io/nexcode-miniapp";
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const ADMIN_ID  = Number(process.env.ADMIN_ID);
+const WEBAPP_URL = "https://umar-muq.github.io/nexcode-miniapp";
 
 if (!BOT_TOKEN) throw new Error("BOT_TOKEN .env faylida yo'q!");
 if (!ADMIN_ID)  throw new Error("ADMIN_ID .env faylida yo'q!");
@@ -18,15 +18,14 @@ const ABOUT_FILE = path.join(__dirname, "about.json");
 
 function loadAboutData() {
   try {
-    if (fs.existsSync(ABOUT_FILE)) {
+    if (fs.existsSync(ABOUT_FILE))
       return JSON.parse(fs.readFileSync(ABOUT_FILE, "utf8"));
-    }
   } catch (e) {}
   return {
-    text:      "NexCode.uz — professional Telegram botlar, web saytlar va raqamli yechimlar.",
+    text:      "BotNexPro — professional Telegram botlar, web saytlar va raqamli yechimlar yaratish bo'yicha xizmat ko'rsatuvchi kompaniya.",
     phone:     "+998 90 000 00 00",
-    telegram:  "@nexcodeuz",
-    instagram: "@nexcodeuz",
+    telegram:  "@botnexpro_admin",
+    instagram: "@botnexpro",
     projects:  "50+",
     clients:   "30+",
     years:     "2+",
@@ -43,15 +42,13 @@ bot.use(session({ defaultSession: () => ({ step: null, data: {} }) }));
 
 const isAdmin = (ctx) => ctx.from.id === ADMIN_ID;
 
-const WEBAPP_URL = "https://umar-muq.github.io/nexcode-miniapp";
-
-// Mini App tugmasi (menu button) — barcha foydalanuvchilarga ko'rinadi
+// Menu tugmasini o'rnatish
 async function setMenuButton() {
   try {
     await bot.telegram.callApi("setChatMenuButton", {
       menu_button: {
         type: "web_app",
-        text: "🌐 NexCode.uz",
+        text: "🌐 BotNexPro",
         web_app: { url: WEBAPP_URL }
       }
     });
@@ -66,14 +63,15 @@ bot.start(async (ctx) => {
   ctx.session.step = null;
   ctx.session.data = {};
   await ctx.reply(
-    "👋 Salom, *" + ctx.from.first_name + "*!\n\n" +
-    "🌐 *NexCode.uz* ga xush kelibsiz!\n\n" +
-    "Quyidagi tugmani bosib bizning Mini App ni oching 👇",
+    `👋 Salom, *${ctx.from.first_name}*!\n\n` +
+    `🤖 *BotNexPro* ga xush kelibsiz!\n\n` +
+    `Professional Telegram botlar va web saytlar yaratamiz.\n\n` +
+    `Quyidagi tugmani bosib bizning ilovamizni oching 👇`,
     {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [[{
-          text: "🌐 NexCode.uz ni ochish",
+          text: "🌐 BotNexPro ni ochish",
           web_app: { url: WEBAPP_URL }
         }]]
       }
@@ -84,22 +82,13 @@ bot.start(async (ctx) => {
 // ── /webapp ───────────────────────────────────────────────
 bot.command("webapp", async (ctx) => {
   await ctx.reply(
-    "🌐 *NexCode.uz Mini App*",
+    "🌐 *BotNexPro Mini App*",
     {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [[{
-          text: "🌐 NexCode.uz ni ochish",
+          text: "🌐 BotNexPro ni ochish",
           web_app: { url: WEBAPP_URL }
-        }]]
-      }
-    }
-  );
-});
-      reply_markup: {
-        inline_keyboard: [[{
-          text: "🌐 NexCode.uz ni ochish",
-          web_app: { url: PUBLIC_URL }
         }]]
       }
     }
@@ -111,12 +100,12 @@ bot.command("admin", async (ctx) => {
   if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
   ctx.session.step = null;
   await ctx.reply(
-    "🛠 *NexCode.uz — Admin Panel*\n\n"
+    "🛠 *BotNexPro — Admin Panel*\n\n"
     + "✏️ /setname — Bot nomini o'zgartirish\n"
     + "🖼 /setphoto — Bot rasmini o'zgartirish\n"
     + "📝 /setdesc — Bot tavsifini o'zgartirish\n"
-    + "ℹ️ /setabout — Biz haqimizda matnini o'zgartirish\n"
-    + "📞 /setphone — Telefon raqamni o'zgartirish\n"
+    + "ℹ️ /setabout — Biz haqimizda matni\n"
+    + "📞 /setphone — Telefon raqam\n"
     + "💬 /settelegram — Telegram username\n"
     + "📸 /setinstagram — Instagram username\n"
     + "🌐 /webapp — Mini App\n"
@@ -128,26 +117,26 @@ bot.command("admin", async (ctx) => {
 bot.command("setname", async (ctx) => {
   if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
   ctx.session.step = "admin_setname";
-  await ctx.reply("✏️ Yangi bot nomini yozing:\n(Bekor qilish: /cancel)");
+  await ctx.reply("✏️ Yangi bot nomini yozing:\n(/cancel — bekor qilish)");
 });
 
 bot.command("setphoto", async (ctx) => {
   if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
   ctx.session.step = "admin_setphoto";
-  await ctx.reply("🖼 Yangi bot rasmini yuboring:\n(Bekor qilish: /cancel)");
+  await ctx.reply("🖼 Yangi bot rasmini yuboring:\n(/cancel — bekor qilish)");
 });
 
 bot.command("setdesc", async (ctx) => {
   if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
   ctx.session.step = "admin_setdesc";
-  await ctx.reply("📝 Yangi bot tavsifini yozing:\n(Bekor qilish: /cancel)");
+  await ctx.reply("📝 Yangi bot tavsifini yozing:\n(/cancel — bekor qilish)");
 });
 
 bot.command("setabout", async (ctx) => {
   if (!isAdmin(ctx)) return ctx.reply("⛔ Ruxsat yo'q!");
   ctx.session.step = "admin_setabout";
   const d = loadAboutData();
-  await ctx.reply(`ℹ️ Hozirgi matn:\n\n${d.text}\n\nYangi matnni yozing:\n(Bekor qilish: /cancel)`);
+  await ctx.reply(`ℹ️ Hozirgi matn:\n\n${d.text}\n\nYangi matnni yozing:`);
 });
 
 bot.command("setphone", async (ctx) => {
@@ -218,7 +207,7 @@ bot.on("text", async (ctx) => {
   if (step === "admin_setabout" && isAdmin(ctx)) {
     const d = loadAboutData(); d.text = text; saveAboutData(d);
     ctx.session.step = null;
-    return ctx.reply("✅ \"Biz haqimizda\" matni yangilandi!");
+    return ctx.reply("✅ Biz haqimizda matni yangilandi!");
   }
   if (step === "admin_setphone" && isAdmin(ctx)) {
     const d = loadAboutData(); d.phone = text; saveAboutData(d);
@@ -254,17 +243,21 @@ bot.on("text", async (ctx) => {
   if (step === "bot_tavsif") {
     ctx.session.data.bot_tavsif = text;
     ctx.session.step = null;
-    await ctx.reply("✅ *Arizangiz qabul qilindi!*\n\n*NexCode.uz* jamoasi tez orada bog'lanadi. 🙏", { parse_mode: "Markdown" });
+    await ctx.reply("✅ *Arizangiz qabul qilindi!*\n\n*BotNexPro* jamoasi tez orada bog'lanadi. 🙏", { parse_mode: "Markdown" });
     const d = ctx.session.data;
     const user = ctx.from;
     const adminText =
-      `🔔 *Yangi ariza! — NexCode.uz*\n━━━━━━━━━━━━━━━━━━\n` +
-      `👤 *Ism:* ${d.ism}\n👤 *Familiya:* ${d.familiya}\n📞 *Telefon:* ${d.telefon}\n` +
+      `🔔 *Yangi ariza! — BotNexPro*\n━━━━━━━━━━━━━━━━━━\n` +
+      `👤 *Ism:* ${d.ism}\n` +
+      `👤 *Familiya:* ${d.familiya}\n` +
+      `📞 *Telefon:* ${d.telefon}\n` +
       `💬 *Xizmat:*\n${d.bot_tavsif}\n━━━━━━━━━━━━━━━━━━\n` +
-      `🆔 ID: \`${user.id}\`\n🔗 @${user.username || "yo'q"}`;
+      `🆔 ID: \`${user.id}\`\n` +
+      `🔗 @${user.username || "yo'q"}`;
     try { await bot.telegram.sendMessage(ADMIN_ID, adminText, { parse_mode: "Markdown" }); } catch (e) {}
     return;
   }
+
   await ctx.reply("Botni boshlash uchun /start bosing.");
 });
 
@@ -280,7 +273,7 @@ bot.on("contact", async (ctx) => {
 
 // ── Ishga tushirish ───────────────────────────────────────
 bot.launch().then(async () => {
-  console.log("✅ NexCode.uz Bot ishga tushdi!");
+  console.log("✅ BotNexPro ishga tushdi!");
   await setMenuButton();
 });
 process.once("SIGINT",  () => bot.stop("SIGINT"));
