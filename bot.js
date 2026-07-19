@@ -43,22 +43,59 @@ bot.use(session({ defaultSession: () => ({ step: null, data: {} }) }));
 
 const isAdmin = (ctx) => ctx.from.id === ADMIN_ID;
 
+const WEBAPP_URL = "https://umar-muq.github.io/nexcode-miniapp";
+
+// Mini App tugmasi (menu button) — barcha foydalanuvchilarga ko'rinadi
+async function setMenuButton() {
+  try {
+    await bot.telegram.callApi("setChatMenuButton", {
+      menu_button: {
+        type: "web_app",
+        text: "🌐 NexCode.uz",
+        web_app: { url: WEBAPP_URL }
+      }
+    });
+    console.log("✅ Menu button o'rnatildi");
+  } catch (e) {
+    console.log("Menu button xato:", e.message);
+  }
+}
+
 // ── /start ────────────────────────────────────────────────
 bot.start(async (ctx) => {
-  ctx.session.step = "ism";
+  ctx.session.step = null;
   ctx.session.data = {};
   await ctx.reply(
-    "👋 Salom! Xush kelibsiz!\n\n📝 NexCode.uz ga ariza to'ldirish uchun bir necha savol beraman.\n\nIsmingizni kiriting:",
-    Markup.removeKeyboard()
+    "👋 Salom, *" + ctx.from.first_name + "*!\n\n" +
+    "🌐 *NexCode.uz* ga xush kelibsiz!\n\n" +
+    "Quyidagi tugmani bosib bizning Mini App ni oching 👇",
+    {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[{
+          text: "🌐 NexCode.uz ni ochish",
+          web_app: { url: WEBAPP_URL }
+        }]]
+      }
+    }
   );
 });
 
 // ── /webapp ───────────────────────────────────────────────
 bot.command("webapp", async (ctx) => {
   await ctx.reply(
-    "🚀 *NexCode.uz Mini App*\n\nQuyidagi tugmani bosing:",
+    "🌐 *NexCode.uz Mini App*",
     {
       parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[{
+          text: "🌐 NexCode.uz ni ochish",
+          web_app: { url: WEBAPP_URL }
+        }]]
+      }
+    }
+  );
+});
       reply_markup: {
         inline_keyboard: [[{
           text: "🌐 NexCode.uz ni ochish",
@@ -242,6 +279,9 @@ bot.on("contact", async (ctx) => {
 });
 
 // ── Ishga tushirish ───────────────────────────────────────
-bot.launch().then(() => console.log("✅ NexCode.uz Bot ishga tushdi!"));
+bot.launch().then(async () => {
+  console.log("✅ NexCode.uz Bot ishga tushdi!");
+  await setMenuButton();
+});
 process.once("SIGINT",  () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
